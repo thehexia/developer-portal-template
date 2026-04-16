@@ -1,0 +1,73 @@
+# Development Docker Compose — hot-reloadable frontend + backend with debug support.
+#
+# Both services share the same Dockerfile.dev image (built once, tagged as
+# developer-portal-dev).  Source directories are bind-mounted so that file
+# changes on the host are immediately visible inside the containers:
+#
+#   Frontend  — Rspack HMR automatically recompiles on src change  → http://localhost:3000
+#   Backend   — backstage-cli watch re-runs ts-node on src change  → http://localhost:7007
+#               Node inspector is exposed on port 9229 for VSCode attach debugging.
+#
+# Usage (via VSCode launch config — see .vscode/launch.json):
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# Manual teardown:
+#   docker compose -f docker-compose.dev.yml down
+
+services:
+
+  # ── Backend ────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: developer-portal-dev
+    command: yarn workspace backend start
+    ports:
+      - "7007:7007"   # Backstage backend API
+      - "9229:9229"   # Node.js inspector (VSCode attach)
+    environment:
+      # Enable the Node.js inspector so VSCode can attach.
+      NODE_OPTIONS: "--inspect=0.0.0.0:9229"
+      NODE_ENV: development
+      # Use polling for file-change detection — more reliable with Docker
+      # volume mounts on macOS (VirtioFS already supports inotify, but this
+      # is a safety net).
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    volumes:
+      # Mount backend source for hot reload.
+      - ./packages/backend/src:/app/packages/backend/src
+      # The backend also imports the app package (link:../app) — mount its
+      # source so changes to the frontend are reflected if needed.
+      - ./packages/app/src:/app/packages/app/src
+      # Config and example catalog data.
+      - ./app-config.yaml:/app/app-config.yaml:ro
+      - ./examples:/app/examples:ro
+    restart: unless-stopped
+
+  # ── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: developer-portal-dev
+    command: yarn workspace app start
+    ports:
+      - "3000:3000"   # Rspack dev server (HMR included)
+    environment:
+      NODE_ENV: development
+      # Bind the dev server to all interfaces so the host can reach it.
+      HOST: "0.0.0.0"
+      # Allow webpack/rspack host checks from Docker's virtual network.
+      DANGEROUSLY_DISABLE_HOST_CHECK: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    volumes:
+      # Mount frontend source for HMR.
+      - ./packages/app/src:/app/packages/app/src
+      # Config (app reads baseUrl / auth settings from here).
+      - ./app-config.yaml:/app/app-config.yaml:ro
+    depends_on:
+      - backend
+    restart: unless-stopped

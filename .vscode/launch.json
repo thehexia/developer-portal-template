@@ -1,0 +1,68 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // ── Developer Portal — Backend (Node.js) ─────────────────────────────────
+    // Attaches to the Node.js inspector running inside the backend container.
+    // The backend exposes port 9229 with NODE_OPTIONS=--inspect=0.0.0.0:9229.
+    //
+    // restart:true means VSCode auto-reconnects when the backend hot-reloads
+    // (ts-node restarts the process on file changes).
+    //
+    // postDebugTask tears down the Docker containers when you stop debugging,
+    // ensuring no orphaned containers are left behind.
+    {
+      "name": "Attach to Backend (Developer Portal)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "address": "localhost",
+      // Map Docker paths (/app/...) to local source paths so breakpoints work.
+      "localRoot": "${workspaceFolder}/src/developer-portal",
+      "remoteRoot": "/app",
+      "restart": true,
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "postDebugTask": "Stop Developer Portal",
+      "presentation": {
+        "hidden": true
+      }
+    },
+
+    // ── Developer Portal — Frontend (Chrome) ─────────────────────────────────
+    // Opens Chrome and attaches the VSCode JS debugger to the Rspack dev server.
+    // Breakpoints set in packages/app/src/**/*.tsx will be hit in the browser.
+    {
+      "name": "Open Frontend (Developer Portal)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/src/developer-portal/packages/app/src",
+      "presentation": {
+        "hidden": true
+      }
+    }
+  ],
+
+  "compounds": [
+    // ── Single launch entry point ─────────────────────────────────────────────
+    // Click "Developer Portal" in the Run & Debug panel to:
+    //   1. Build and start all Docker containers (preLaunchTask).
+    //   2. Attach the Node.js debugger to the backend (port 9229).
+    //   3. Launch Chrome connected to the frontend dev server (port 3000).
+    //
+    // stopAll:true means stopping either debugger stops the whole compound.
+    // The backend config's postDebugTask then runs "docker compose down".
+    {
+      "name": "Developer Portal",
+      "configurations": [
+        "Attach to Backend (Developer Portal)",
+        "Open Frontend (Developer Portal)"
+      ],
+      "preLaunchTask": "Start Developer Portal",
+      "stopAll": true,
+      "presentation": {
+        "order": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ── Developer Portal ────────────────────────────────────────────────────
+    {
+      // Starts (and builds if needed) all Developer Portal containers.
+      // This task runs in the background; VSCode waits until Rspack signals
+      // that the frontend is compiled before triggering the debugger attach.
+      "label": "Start Developer Portal",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.dev.yml up --build",
+      "options": {
+        "cwd": "${workspaceFolder}/src/developer-portal"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "group": "developer-portal"
+      },
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          // activeOnStart tells VSCode the task is already "running" as soon
+          // as it starts (no explicit begin signal needed).
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          // Wait until Rspack (frontend) finishes its first compilation before
+          // VSCode attaches the debuggers.  The backend is ready before this.
+          "endsPattern": "Rspack compiled|webpack compiled|Compiled successfully"
+        }
+      }
+    },
+
+    {
+      // Tears down all Developer Portal containers and removes them.
+      // Called automatically as postDebugTask when debugging stops.
+      "label": "Stop Developer Portal",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.dev.yml down",
+      "options": {
+        "cwd": "${workspaceFolder}/src/developer-portal"
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "group": "developer-portal"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
