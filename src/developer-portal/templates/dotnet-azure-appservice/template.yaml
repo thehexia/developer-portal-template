@@ -1,0 +1,149 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: dotnet-azure-appservice
+  title: .NET Minimal API on Azure App Service
+  description: >
+    Scaffolds a .NET minimal API with Terraform-managed Azure App Service infrastructure
+    and an Azure DevOps pipeline for CI/CD.
+  tags:
+    - dotnet
+    - azure
+    - terraform
+    - ado
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Component Information
+      required:
+        - name
+        - description
+        - owner
+      properties:
+        name:
+          title: Name
+          type: string
+          description: Unique name for the component. Used as the repo name and Azure resource suffix.
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: Short description of the service
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component (user or group)
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+
+    - title: Azure Configuration
+      required:
+        - azureSubscriptionId
+        - azureResourceGroup
+        - azureLocation
+        - azureServiceConnection
+      properties:
+        azureSubscriptionId:
+          title: Azure Subscription ID
+          type: string
+          description: The Azure subscription ID to deploy resources into
+        azureResourceGroup:
+          title: Resource Group Name
+          type: string
+          description: Name of the Azure resource group to deploy into
+        azureLocation:
+          title: Azure Location
+          type: string
+          description: Azure region for all resources (e.g. eastus, australiaeast)
+          default: eastus
+        azureServiceConnection:
+          title: Azure Service Connection
+          type: string
+          description: Name of the Azure DevOps ARM service connection used for deployments
+        tfStateStorageAccount:
+          title: Terraform State Storage Account
+          type: string
+          description: Azure Storage Account name used to store Terraform state
+        appServiceSku:
+          title: App Service SKU
+          type: string
+          description: App Service plan pricing tier
+          default: B1
+          enum:
+            - B1
+            - B2
+            - B3
+            - S1
+            - S2
+            - S3
+          enumNames:
+            - 'Basic B1'
+            - 'Basic B2'
+            - 'Basic B3'
+            - 'Standard S1'
+            - 'Standard S2'
+            - 'Standard S3'
+
+    - title: Repository Location
+      required:
+        - adoProject
+      properties:
+        # Hidden — org is portal-wide. Keep this default in sync with ADO_ORGANIZATION in .env
+        # and azureDevOps.organization in app-config.yaml.
+        adoOrganization:
+          title: Azure DevOps Organization
+          type: string
+          default: hvnguyen
+          ui:widget: hidden
+        adoProject:
+          title: Azure DevOps Project
+          type: string
+          description: The project within the organization where the repository will be created
+          ui:help: 'Example: my-project'
+
+  steps:
+    - id: fetch-base
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./content
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          azureSubscriptionId: ${{ parameters.azureSubscriptionId }}
+          azureResourceGroup: ${{ parameters.azureResourceGroup }}
+          azureLocation: ${{ parameters.azureLocation }}
+          azureServiceConnection: ${{ parameters.azureServiceConnection }}
+          tfStateStorageAccount: ${{ parameters.tfStateStorageAccount }}
+          appServiceSku: ${{ parameters.appServiceSku }}
+          adoOrganization: ${{ parameters.adoOrganization }}
+          adoProject: ${{ parameters.adoProject }}
+
+    - id: publish
+      name: Publish to Azure DevOps
+      action: publish:azure
+      input:
+        description: ${{ parameters.description }}
+        defaultBranch: main
+        repoUrl: "dev.azure.com?organization=${{ parameters.adoOrganization }}&project=${{ parameters.adoProject }}&repo=${{ parameters.name }}"
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

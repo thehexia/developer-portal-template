@@ -1,0 +1,138 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  serviceConnection: '${{ values.azureServiceConnection }}'
+  subscriptionId: '${{ values.azureSubscriptionId }}'
+  resourceGroupName: '${{ values.azureResourceGroup }}'
+  location: '${{ values.azureLocation }}'
+  tfStateStorageAccount: '${{ values.tfStateStorageAccount }}'
+  appServiceName: 'app-${{ values.name }}'
+  dotnetVersion: '9.x'
+  buildConfiguration: 'Release'
+  terraformVersion: '1.9.x'
+  tfStateKey: '${{ values.name }}.terraform.tfstate'
+  tfStateContainer: 'tfstate'
+
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: BuildJob
+        displayName: Build .NET App
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: UseDotNet@2
+            displayName: Use .NET $(dotnetVersion)
+            inputs:
+              version: $(dotnetVersion)
+
+          - task: DotNetCoreCLI@2
+            displayName: Restore
+            inputs:
+              command: restore
+              projects: 'src/${{ values.name }}.csproj'
+
+          - task: DotNetCoreCLI@2
+            displayName: Build
+            inputs:
+              command: build
+              projects: 'src/${{ values.name }}.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          - task: DotNetCoreCLI@2
+            displayName: Publish
+            inputs:
+              command: publish
+              publishWebProjects: false
+              projects: 'src/${{ values.name }}.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)/app'
+              zipAfterPublish: true
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish App Artifact
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)/app
+              artifact: app
+
+  - stage: Infrastructure
+    displayName: Provision Infrastructure
+    dependsOn: Build
+    jobs:
+      - job: TerraformJob
+        displayName: Terraform Apply
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: TerraformInstaller@1
+            displayName: Install Terraform $(terraformVersion)
+            inputs:
+              terraformVersion: $(terraformVersion)
+
+          - task: TerraformTaskV4@4
+            displayName: Terraform Init
+            inputs:
+              provider: azurerm
+              command: init
+              workingDirectory: terraform
+              backendServiceArm: $(serviceConnection)
+              backendAzureRmResourceGroupName: $(resourceGroupName)
+              backendAzureRmStorageAccountName: $(tfStateStorageAccount)
+              backendAzureRmContainerName: $(tfStateContainer)
+              backendAzureRmKey: $(tfStateKey)
+
+          - task: TerraformTaskV4@4
+            displayName: Terraform Plan
+            inputs:
+              provider: azurerm
+              command: plan
+              workingDirectory: terraform
+              environmentServiceNameAzureRM: $(serviceConnection)
+              commandOptions: >-
+                -var="subscription_id=$(subscriptionId)"
+                -var="resource_group_name=$(resourceGroupName)"
+                -var="location=$(location)"
+
+          - task: TerraformTaskV4@4
+            displayName: Terraform Apply
+            inputs:
+              provider: azurerm
+              command: apply
+              workingDirectory: terraform
+              environmentServiceNameAzureRM: $(serviceConnection)
+              commandOptions: >-
+                -auto-approve
+                -var="subscription_id=$(subscriptionId)"
+                -var="resource_group_name=$(resourceGroupName)"
+                -var="location=$(location)"
+
+  - stage: Deploy
+    displayName: Deploy Application
+    dependsOn: Infrastructure
+    jobs:
+      - deployment: DeployJob
+        displayName: Deploy to Azure App Service
+        pool:
+          vmImage: ubuntu-latest
+        environment: production
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  displayName: Download App Artifact
+                  inputs:
+                    artifact: app
+                    path: $(Pipeline.Workspace)/app
+
+                - task: AzureWebApp@1
+                  displayName: Deploy to Azure App Service
+                  inputs:
+                    azureSubscription: $(serviceConnection)
+                    appType: webAppLinux
+                    appName: $(appServiceName)
+                    package: '$(Pipeline.Workspace)/app/*.zip'
+                    runtimeStack: 'DOTNETCORE|9.0'

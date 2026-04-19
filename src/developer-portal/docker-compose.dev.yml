@@ -35,6 +35,9 @@ services:
       # is a safety net).
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "1000"
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      AZURE_TOKEN: ${AZURE_TOKEN}
+      ADO_ORGANIZATION: ${ADO_ORGANIZATION}
     volumes:
       # Mount backend source for hot reload.
       - ./packages/backend/src:/app/packages/backend/src
@@ -44,6 +47,7 @@ services:
       # Config and example catalog data.
       - ./app-config.yaml:/app/app-config.yaml:ro
       - ./examples:/app/examples:ro
+      - ./templates:/app/templates:ro
     restart: unless-stopped
 
   # ── Frontend ───────────────────────────────────────────────────────────────

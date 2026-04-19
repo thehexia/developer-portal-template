@@ -1,0 +1,44 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "developer-portal", "developer-portal", "{B44435F2-1578-CB07-3AC0-D5A1EAB44444}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "templates", "templates", "{43FE1D66-00F2-3180-F008-C1E7D1CB10DC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dotnet-azure-appservice", "dotnet-azure-appservice", "{AAD524A2-6216-951C-B67D-07C8A18FA67E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "content", "content", "{0FE384D6-6E63-86BD-BB83-8A659BB617E1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AAC79687-4028-DEE5-6D4E-7158B968E0F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "${{ values.name }}", "src\developer-portal\templates\dotnet-azure-appservice\content\src\${{ values.name }}.csproj", "{FE15CD9E-F4CD-9C88-1683-F5EAB89E0DD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FE15CD9E-F4CD-9C88-1683-F5EAB89E0DD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE15CD9E-F4CD-9C88-1683-F5EAB89E0DD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE15CD9E-F4CD-9C88-1683-F5EAB89E0DD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE15CD9E-F4CD-9C88-1683-F5EAB89E0DD4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B44435F2-1578-CB07-3AC0-D5A1EAB44444} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{43FE1D66-00F2-3180-F008-C1E7D1CB10DC} = {B44435F2-1578-CB07-3AC0-D5A1EAB44444}
+		{AAD524A2-6216-951C-B67D-07C8A18FA67E} = {43FE1D66-00F2-3180-F008-C1E7D1CB10DC}
+		{0FE384D6-6E63-86BD-BB83-8A659BB617E1} = {AAD524A2-6216-951C-B67D-07C8A18FA67E}
+		{AAC79687-4028-DEE5-6D4E-7158B968E0F7} = {0FE384D6-6E63-86BD-BB83-8A659BB617E1}
+		{FE15CD9E-F4CD-9C88-1683-F5EAB89E0DD4} = {AAC79687-4028-DEE5-6D4E-7158B968E0F7}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {813EB33A-F856-489F-AC43-34E12A9A035A}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,27 @@
+# Developer Portal — Agent Context
+
+## Local secrets
+
+Secrets are loaded from `src/developer-portal/.env` (git-ignored).
+`docker-compose.dev.yml` passes them into the backend container via environment variables.
+
+Required variables:
+
+| Variable | Purpose | Minimum scope |
+|---|---|---|
+| `GITHUB_TOKEN` | GitHub integration (catalog ingestion, scaffolder) | `repo` |
+| `AZURE_TOKEN` | Azure DevOps integration (scaffolder `publish:azure` action) | Code (Read & Write) — `vso.code_write` |
+
+To populate, edit `.env`:
+
+```
+GITHUB_TOKEN=your_github_pat_here
+AZURE_TOKEN=your_azure_devops_pat_here
+```
+
+### Azure DevOps PAT notes
+- Create at `https://dev.azure.com/{org}/_usersSettings/tokens`
+- **Code (Read & Write)** scope is sufficient to create repositories via the REST API
+- The token scope controls capability, but your account also needs the **Create Repository**
+  project-level permission; if repo creation returns 403 after auth is working, a project
+  admin must grant that permission

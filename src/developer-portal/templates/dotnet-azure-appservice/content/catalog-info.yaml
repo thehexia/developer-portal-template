@@ -1,0 +1,13 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}
+  description: ${{ values.description }}
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    dev.azure.com/project-repo: ${{ values.adoProject }}/${{ values.name }}
+    dev.azure.com/build-definition: ${{ values.name }}
+spec:
+  type: service
+  owner: ${{ values.owner }}
+  lifecycle: experimental
